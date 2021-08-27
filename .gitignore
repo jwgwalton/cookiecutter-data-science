@@ -1,5 +1,8 @@
 docs/site/
 
+# Pycharm files
+.idea/
+
 # OSX Junk
 .DS_Store
 
