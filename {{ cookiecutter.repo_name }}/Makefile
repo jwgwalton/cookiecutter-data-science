@@ -47,7 +47,7 @@ initialize_version_control: requirements
 {% endif %}
 
 ## Make Dataset
-data: requirements
+data: initialize_version_control
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
 
 ## Delete all compiled Python files
