@@ -5,6 +5,7 @@
 #################################################################################
 
 PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+WASABI_REGION = {{ cookiecutter.wasabi_region }}
 BUCKET = {{ cookiecutter.s3_bucket }}
 PROFILE = {{ cookiecutter.aws_profile }}
 PROJECT_NAME = {{ cookiecutter.repo_name }}
@@ -25,12 +26,13 @@ requirements: test_environment
 	$(PYTHON_INTERPRETER) -m pip install -U pip setuptools wheel
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 
-## Inititalize git + dvc if data version conrol is used
+## Inititalize git + DVC
 initialize_version_control: requirements
 	git init
 	dvc init
 	dvc config cache.type reflink,copy
 	dvc remote add -d origin s3://$(BUCKET)/data
+	dvc remote modify origin endpointurl $(WASABI_REGION)
 ifneq (default,$(PROFILE))
 	dvc remote modify origin profile $(PROFILE)
 endif
@@ -39,7 +41,7 @@ endif
 	git add data.dvc
 	git commit -m 'Initialize data version control'
 
-## Make Dataset
+## Make Dataset from data/raw
 data: initialize_version_control
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
 
@@ -52,14 +54,15 @@ clean:
 lint:
 	flake8 src
 
-## Upload Data to S3
+## Upload Data to Wasabi S3
 sync_data_to_s3:
-	dvc add data
+	# TODO: Decide on whether to just version the raw data so we can use DVC pipelines?
+	dvc add data/raw
 	dvc push data.dvc
 	git commit data.dvc -m "Save data directory"
 
 
-## Download Data from S3
+## Download Data from Wasabi S3
 sync_data_from_s3:
 	dvc pull data.dvc
 
